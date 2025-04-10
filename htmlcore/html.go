@@ -18,19 +18,19 @@ import (
 
 // ReadHTML reads HTML from the given [io.Reader] and adds corresponding
 // Cogent Core widgets to the given [core.Widget], using the given context.
-func ReadHTML(ctx *Context, parent core.Widget, r io.Reader, style *css.Stylesheet) error {
+func ReadHTML(ctx *Context, parent core.Widget, r io.Reader, styles []*css.Stylesheet) error {
 	n, err := html.Parse(r)
 	if err != nil {
 		return fmt.Errorf("error parsing HTML: %w", err)
 	}
-	return ReadHTMLNode(ctx, parent, n, style)
+	return ReadHTMLNode(ctx, parent, n, styles)
 }
 
 // ReadHTMLString reads HTML from the given string and adds corresponding
 // Cogent Core widgets to the given [core.Widget], using the given context.
-func ReadHTMLString(ctx *Context, parent core.Widget, s string, style *css.Stylesheet) error {
+func ReadHTMLString(ctx *Context, parent core.Widget, s string, styles []*css.Stylesheet) error {
 	b := bytes.NewBufferString(s)
-	return ReadHTML(ctx, parent, b, style)
+	return ReadHTML(ctx, parent, b, styles)
 }
 func readHTMLNode(ctx *Context, parent core.Widget, n *html.Node) error {
 	// nil parent means we are root, so we add user agent styles here
@@ -67,7 +67,7 @@ func readHTMLNode(ctx *Context, parent core.Widget, n *html.Node) error {
 
 // readHTMLNode reads HTML from the given [*html.Node] and adds corresponding
 // Cogent Core widgets to the given [core.Widget], using the given context.
-func ReadHTMLNode(ctx *Context, parent core.Widget, n *html.Node, style *css.Stylesheet) error {
+func ReadHTMLNode(ctx *Context, parent core.Widget, n *html.Node, styles []*css.Stylesheet) error {
 	// nil parent means we are root, so we add user agent styles here
 	if n.Parent == nil {
 		ctx.Node = n
@@ -85,17 +85,17 @@ func ReadHTMLNode(ctx *Context, parent core.Widget, n *html.Node, style *css.Sty
 		ctx.BlockParent = parent
 		ctx.NewParent = nil
 
-		HandleElement(ctx, style)
+		HandleElement(ctx, styles)
 	default:
 		ctx.NewParent = parent
 	}
 
 	if ctx.NewParent != nil && n.FirstChild != nil {
-		ReadHTMLNode(ctx, ctx.NewParent, n.FirstChild, style)
+		ReadHTMLNode(ctx, ctx.NewParent, n.FirstChild, styles)
 	}
 
 	if n.NextSibling != nil {
-		ReadHTMLNode(ctx, parent, n.NextSibling, style)
+		ReadHTMLNode(ctx, parent, n.NextSibling, styles)
 	}
 	return nil
 }

@@ -245,7 +245,7 @@ func handleElement(ctx *Context) {
 // handleElement calls the handler in [Context.ElementHandlers] associated with the current node
 // using the given context. If there is no handler associated with it, it uses default
 // hardcoded configuration code.
-func HandleElement(ctx *Context, style *css.Stylesheet) {
+func HandleElement(ctx *Context, styles []*css.Stylesheet) {
 	tag := ctx.Node.Data
 	h, ok := ctx.ElementHandlers[tag]
 	if ok {
@@ -283,7 +283,7 @@ func HandleElement(ctx *Context, style *css.Stylesheet) {
 		}
 		ctx.addStyleFromHtml(string(b))
 	case "style":
-		ctx.AddStyle(style)
+		ctx.AddStyle(styles)
 	case "body", "main", "div", "section", "nav", "footer", "header", "ol", "ul", "blockquote":
 		w := New[core.Frame](ctx)
 		ctx.NewParent = w

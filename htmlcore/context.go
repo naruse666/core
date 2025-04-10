@@ -190,25 +190,27 @@ func (c *Context) addStyleFromHtml(b string) {
 }
 
 // addStyle adds the given CSS style string to the page's compiled styles.
-func (c *Context) AddStyle(style *css.Stylesheet) {
+func (c *Context) AddStyle(styles []*css.Stylesheet) {
 
 	root := rootNode(c.Node)
 
-	for _, rule := range style.Rules {
-		var sel *selcss.Selector
-		if len(rule.Selectors) > 0 {
-			s, err := selcss.Parse(strings.Join(rule.Selectors, ","))
-			if errors.Log(err) != nil {
-				s = &selcss.Selector{}
+	for _, style := range styles {
+		for _, rule := range style.Rules {
+			var sel *selcss.Selector
+			if len(rule.Selectors) > 0 {
+				s, err := selcss.Parse(strings.Join(rule.Selectors, ","))
+				if errors.Log(err) != nil {
+					s = &selcss.Selector{}
+				}
+				sel = s
+			} else {
+				sel = &selcss.Selector{}
 			}
-			sel = s
-		} else {
-			sel = &selcss.Selector{}
-		}
 
-		matches := sel.Select(root)
-		for _, match := range matches {
-			c.styles[match] = append(c.styles[match], rule)
+			matches := sel.Select(root)
+			for _, match := range matches {
+				c.styles[match] = append(c.styles[match], rule)
+			}
 		}
 	}
 }
