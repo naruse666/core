@@ -23,6 +23,7 @@ import (
 	"cogentcore.org/core/styles/units"
 	"cogentcore.org/core/texteditor"
 	"cogentcore.org/core/tree"
+	"github.com/aymerick/douceur/css"
 	"golang.org/x/net/html"
 )
 
@@ -38,7 +39,7 @@ func New[T tree.NodeValue](ctx *Context) *T {
 // handleElement calls the handler in [Context.ElementHandlers] associated with the current node
 // using the given context. If there is no handler associated with it, it uses default
 // hardcoded configuration code.
-func handleElement(ctx *Context) {
+func handleElement(ctx *Context, style *css.Stylesheet) {
 	tag := ctx.Node.Data
 	h, ok := ctx.ElementHandlers[tag]
 	if ok {
@@ -74,9 +75,9 @@ func handleElement(ctx *Context) {
 		if errors.Log(err) != nil {
 			return
 		}
-		ctx.addStyle(string(b))
+		ctx.addStyle(string(b), style)
 	case "style":
-		ctx.addStyle(ExtractText(ctx))
+		ctx.addStyle(ExtractText(ctx), style)
 	case "body", "main", "div", "section", "nav", "footer", "header", "ol", "ul", "blockquote":
 		w := New[core.Frame](ctx)
 		ctx.NewParent = w

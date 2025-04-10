@@ -163,15 +163,11 @@ func (c *Context) InlineParent() core.Widget {
 }
 
 // addStyle adds the given CSS style string to the page's compiled styles.
-func (c *Context) addStyle(style string) {
-	ss, err := parser.Parse(style)
-	if errors.Log(err) != nil {
-		return
-	}
+func (c *Context) addStyle(style *css.Stylesheet) {
 
 	root := rootNode(c.Node)
 
-	for _, rule := range ss.Rules {
+	for _, rule := range style.Rules {
 		var sel *selcss.Selector
 		if len(rule.Selectors) > 0 {
 			s, err := selcss.Parse(strings.Join(rule.Selectors, ","))
