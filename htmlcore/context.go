@@ -70,6 +70,7 @@ type Context struct {
 	// The functions are tried in sequential ascending order.
 	// See [Context.AddWikilinkHandler] to add a new handler.
 	WikilinkHandlers []WikilinkHandler
+	Styled           bool
 }
 
 // NewContext returns a new [Context] with basic defaults.
@@ -191,6 +192,9 @@ func (c *Context) addStyleFromHtml(b string) {
 
 // addStyle adds the given CSS style string to the page's compiled styles.
 func (c *Context) AddStyle(styles []*css.Stylesheet) {
+	if c.Styled {
+		return
+	}
 
 	root := rootNode(c.Node)
 
@@ -213,6 +217,7 @@ func (c *Context) AddStyle(styles []*css.Stylesheet) {
 			}
 		}
 	}
+	c.Styled = true
 }
 func (c *Context) addStyle(style string) {
 	ss, err := parser.Parse(style)

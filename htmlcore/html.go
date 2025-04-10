@@ -74,6 +74,7 @@ func ReadHTMLNode(ctx *Context, parent core.Widget, n *html.Node, styles []*css.
 		// ctx.addStyle(userAgentStyles)
 	}
 
+	ctx.AddStyle(styles)
 	switch n.Type {
 	case html.TextNode:
 		str := strings.TrimSpace(n.Data)
