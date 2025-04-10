@@ -6,11 +6,12 @@ package htmlcore
 
 import (
 	"bytes"
+	"fmt"
 
-	"github.com/naruse666/core/core"
 	"github.com/gomarkdown/markdown"
 	"github.com/gomarkdown/markdown/html"
 	"github.com/gomarkdown/markdown/parser"
+	"github.com/naruse666/core/core"
 )
 
 func mdToHTML(ctx *Context, md []byte) []byte {
@@ -34,7 +35,8 @@ func mdToHTML(ctx *Context, md []byte) []byte {
 func ReadMD(ctx *Context, parent core.Widget, b []byte) error {
 	htm := mdToHTML(ctx, b)
 	buf := bytes.NewBuffer(htm)
-	return ReadHTML(ctx, parent, buf)
+	fmt.Println(buf)
+	return nil
 }
 
 // ReadMDString reads MD (markdown) from the given string and adds

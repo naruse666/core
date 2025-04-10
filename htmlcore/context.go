@@ -8,6 +8,9 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/aymerick/douceur/css"
+	"github.com/aymerick/douceur/parser"
+	selcss "github.com/ericchiang/css"
 	"github.com/naruse666/core/base/errors"
 	"github.com/naruse666/core/colors"
 	"github.com/naruse666/core/core"
@@ -15,9 +18,6 @@ import (
 	"github.com/naruse666/core/styles"
 	"github.com/naruse666/core/system"
 	"github.com/naruse666/core/tree"
-	"github.com/aymerick/douceur/css"
-	"github.com/aymerick/douceur/parser"
-	selcss "github.com/ericchiang/css"
 	"golang.org/x/net/html"
 )
 
@@ -162,12 +162,65 @@ func (c *Context) InlineParent() core.Widget {
 	return c.inlineParent
 }
 
+func (c *Context) addStyleFromHtml(b string) {
+	ss, err := parser.Parse(b)
+	if errors.Log(err) != nil {
+		return
+	}
+
+	root := rootNode(c.Node)
+
+	for _, rule := range ss.Rules {
+		var sel *selcss.Selector
+		if len(rule.Selectors) > 0 {
+			s, err := selcss.Parse(strings.Join(rule.Selectors, ","))
+			if errors.Log(err) != nil {
+				s = &selcss.Selector{}
+			}
+			sel = s
+		} else {
+			sel = &selcss.Selector{}
+		}
+
+		matches := sel.Select(root)
+		for _, match := range matches {
+			c.styles[match] = append(c.styles[match], rule)
+		}
+	}
+}
+
 // addStyle adds the given CSS style string to the page's compiled styles.
-func (c *Context) addStyle(style *css.Stylesheet) {
+func (c *Context) AddStyle(style *css.Stylesheet) {
 
 	root := rootNode(c.Node)
 
 	for _, rule := range style.Rules {
+		var sel *selcss.Selector
+		if len(rule.Selectors) > 0 {
+			s, err := selcss.Parse(strings.Join(rule.Selectors, ","))
+			if errors.Log(err) != nil {
+				s = &selcss.Selector{}
+			}
+			sel = s
+		} else {
+			sel = &selcss.Selector{}
+		}
+
+		matches := sel.Select(root)
+		for _, match := range matches {
+			c.styles[match] = append(c.styles[match], rule)
+		}
+	}
+}
+func (c *Context) addStyle(style string) {
+	ss, err := parser.Parse(style)
+	if errors.Log(err) != nil {
+		return
+	}
+
+	root := rootNode(c.Node)
+
+	for _, rule := range ss.Rules {
 		var sel *selcss.Selector
 		if len(rule.Selectors) > 0 {
 			s, err := selcss.Parse(strings.Join(rule.Selectors, ","))

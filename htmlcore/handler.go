@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/aymerick/douceur/css"
 	"github.com/naruse666/core/base/errors"
 	"github.com/naruse666/core/base/iox/imagex"
 	"github.com/naruse666/core/colors"
@@ -23,7 +24,6 @@ import (
 	"github.com/naruse666/core/styles/units"
 	"github.com/naruse666/core/texteditor"
 	"github.com/naruse666/core/tree"
-	"github.com/aymerick/douceur/css"
 	"golang.org/x/net/html"
 )
 
@@ -36,10 +36,7 @@ func New[T tree.NodeValue](ctx *Context) *T {
 	return w
 }
 
-// handleElement calls the handler in [Context.ElementHandlers] associated with the current node
-// using the given context. If there is no handler associated with it, it uses default
-// hardcoded configuration code.
-func handleElement(ctx *Context, style *css.Stylesheet) {
+func handleElement(ctx *Context) {
 	tag := ctx.Node.Data
 	h, ok := ctx.ElementHandlers[tag]
 	if ok {
@@ -75,9 +72,218 @@ func handleElement(ctx *Context, style *css.Stylesheet) {
 		if errors.Log(err) != nil {
 			return
 		}
-		ctx.addStyle(string(b), style)
+		ctx.addStyleFromHtml(string(b))
 	case "style":
-		ctx.addStyle(ExtractText(ctx), style)
+		ctx.addStyle(ExtractText(ctx))
+	case "body", "main", "div", "section", "nav", "footer", "header", "ol", "ul", "blockquote":
+		w := New[core.Frame](ctx)
+		ctx.NewParent = w
+		if tag == "body" {
+			w.Styler(func(s *styles.Style) {
+				s.Grow.Set(1, 1)
+			})
+		}
+		if tag == "ol" || tag == "ul" {
+			w.Styler(func(s *styles.Style) {
+				s.Grow.Set(1, 0)
+			})
+		}
+	case "button":
+		New[core.Button](ctx).SetText(ExtractText(ctx))
+	case "h1":
+		handleText(ctx).SetType(core.TextDisplaySmall)
+	case "h2":
+		handleText(ctx).SetType(core.TextHeadlineMedium)
+	case "h3":
+		handleText(ctx).SetType(core.TextTitleLarge)
+	case "h4":
+		handleText(ctx).SetType(core.TextTitleMedium)
+	case "h5":
+		handleText(ctx).SetType(core.TextTitleSmall)
+	case "h6":
+		handleText(ctx).SetType(core.TextLabelSmall)
+	case "p":
+		handleText(ctx)
+	case "pre":
+		hasCode := ctx.Node.FirstChild != nil && ctx.Node.FirstChild.Data == "code"
+		if hasCode {
+			ed := New[texteditor.Editor](ctx)
+			ctx.Node = ctx.Node.FirstChild // go to the code element
+			lang := getLanguage(GetAttr(ctx.Node, "class"))
+			if lang != "" {
+				ed.Buffer.SetFileExt(lang)
+			}
+			ed.Buffer.SetString(ExtractText(ctx))
+			if BindTextEditor != nil && (lang == "Go" || lang == "Goal") {
+				ed.Buffer.SpacesToTabs(0, ed.Buffer.NumLines()) // Go uses tabs
+				parent := core.NewFrame(ed.Parent)
+				parent.Styler(func(s *styles.Style) {
+					s.Direction = styles.Column
+					s.Grow.Set(1, 0)
+				})
+				// we inherit our Grow.Y from our first child so that
+				// elements that want to grow can do so
+				parent.SetOnChildAdded(func(n tree.Node) {
+					if _, ok := n.(*core.Body); ok { // Body should not grow
+						return
+					}
+					wb := core.AsWidget(n)
+					if wb.IndexInParent() != 0 {
+						return
+					}
+					wb.FinalStyler(func(s *styles.Style) {
+						parent.Styles.Grow.Y = s.Grow.Y
+					})
+				})
+				BindTextEditor(ed, parent, lang)
+			} else {
+				ed.SetReadOnly(true)
+				ed.Buffer.Options.LineNumbers = false
+				ed.Styler(func(s *styles.Style) {
+					s.Border.Width.Zero()
+					s.MaxBorder.Width.Zero()
+					s.StateLayer = 0
+					s.Background = colors.Scheme.SurfaceContainer
+				})
+			}
+		} else {
+			handleText(ctx).Styler(func(s *styles.Style) {
+				s.Text.WhiteSpace = styles.WhiteSpacePreWrap
+			})
+		}
+	case "li":
+		// if we have a p as our first or second child, which is typical
+		// for markdown-generated HTML, we use it directly for data extraction
+		// to prevent double elements and unnecessary line breaks.
+		if ctx.Node.FirstChild != nil && ctx.Node.FirstChild.Data == "p" {
+			ctx.Node = ctx.Node.FirstChild
+		} else if ctx.Node.FirstChild != nil && ctx.Node.FirstChild.NextSibling != nil && ctx.Node.FirstChild.NextSibling.Data == "p" {
+			ctx.Node = ctx.Node.FirstChild.NextSibling
+		}
+
+		text := handleText(ctx)
+		start := ""
+		if pw, ok := text.Parent.(core.Widget); ok {
+			switch pw.AsTree().Property("tag") {
+			case "ol":
+				number := 0
+				for _, k := range pw.AsTree().Children {
+					// we only consider text for the number (frames may be
+					// added for nested lists, interfering with the number)
+					if _, ok := k.(*core.Text); ok {
+						number++
+					}
+				}
+				start = strconv.Itoa(number) + ". "
+			case "ul":
+				// TODO(kai/htmlcore): have different bullets for different depths
+				start = "• "
+			}
+		}
+		text.SetText(start + text.Text)
+	case "img":
+		img := New[core.Image](ctx)
+		n := ctx.Node
+		img.SetTooltip(GetAttr(n, "alt"))
+		go func() {
+			src := GetAttr(n, "src")
+			resp, err := Get(ctx, src)
+			if errors.Log(err) != nil {
+				return
+			}
+			defer resp.Body.Close()
+			if strings.Contains(resp.Header.Get("Content-Type"), "svg") {
+				// TODO(kai/htmlcore): support svg
+			} else {
+				im, _, err := imagex.Read(resp.Body)
+				if err != nil {
+					slog.Error("error loading image", "url", src, "err", err)
+					return
+				}
+				img.AsyncLock()
+				img.SetImage(im)
+				img.Update()
+				img.AsyncUnlock()
+			}
+		}()
+	case "input":
+		ityp := GetAttr(ctx.Node, "type")
+		val := GetAttr(ctx.Node, "value")
+		switch ityp {
+		case "number":
+			fval := float32(errors.Log1(strconv.ParseFloat(val, 32)))
+			New[core.Spinner](ctx).SetValue(fval)
+		case "checkbox":
+			New[core.Switch](ctx).SetType(core.SwitchCheckbox).
+				SetState(HasAttr(ctx.Node, "checked"), states.Checked)
+		case "radio":
+			New[core.Switch](ctx).SetType(core.SwitchRadioButton).
+				SetState(HasAttr(ctx.Node, "checked"), states.Checked)
+		case "range":
+			fval := float32(errors.Log1(strconv.ParseFloat(val, 32)))
+			New[core.Slider](ctx).SetValue(fval)
+		case "button", "submit":
+			New[core.Button](ctx).SetText(val)
+		case "color":
+			core.Bind(val, New[core.ColorButton](ctx))
+		case "datetime":
+			core.Bind(val, New[core.TimeInput](ctx))
+		case "file":
+			core.Bind(val, New[core.FileButton](ctx))
+		default:
+			New[core.TextField](ctx).SetText(val)
+		}
+	case "textarea":
+		buf := texteditor.NewBuffer()
+		buf.SetText([]byte(ExtractText(ctx)))
+		New[texteditor.Editor](ctx).SetBuffer(buf)
+	default:
+		ctx.NewParent = ctx.Parent()
+	}
+}
+
+// handleElement calls the handler in [Context.ElementHandlers] associated with the current node
+// using the given context. If there is no handler associated with it, it uses default
+// hardcoded configuration code.
+func HandleElement(ctx *Context, style *css.Stylesheet) {
+	tag := ctx.Node.Data
+	h, ok := ctx.ElementHandlers[tag]
+	if ok {
+		if h(ctx) {
+			return
+		}
+	}
+
+	if slices.Contains(textTags, tag) {
+		handleTextTag(ctx)
+		return
+	}
+
+	switch tag {
+	case "script", "title", "meta":
+		// we don't render anything
+	case "link":
+		rel := GetAttr(ctx.Node, "rel")
+		// TODO(kai/htmlcore): maybe handle preload
+		if rel == "preload" {
+			return
+		}
+		// TODO(kai/htmlcore): support links other than stylesheets
+		if rel != "stylesheet" {
+			return
+		}
+		resp, err := Get(ctx, GetAttr(ctx.Node, "href"))
+		if errors.Log(err) != nil {
+			return
+		}
+		defer resp.Body.Close()
+		b, err := io.ReadAll(resp.Body)
+		if errors.Log(err) != nil {
+			return
+		}
+		ctx.addStyleFromHtml(string(b))
+	case "style":
+		ctx.AddStyle(style)
 	case "body", "main", "div", "section", "nav", "footer", "header", "ol", "ul", "blockquote":
 		w := New[core.Frame](ctx)
 		ctx.NewParent = w

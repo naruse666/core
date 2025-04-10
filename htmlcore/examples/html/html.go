@@ -4,19 +4,19 @@
 
 package main
 
-import (
-	_ "embed"
+// import (
+// 	_ "embed"
+//
+// 	"github.com/naruse666/core/base/errors"
+// 	"github.com/naruse666/core/core"
+// 	"github.com/naruse666/core/htmlcore"
+// )
+//
+// //go:embed example.html
+// var content string
 
-	"github.com/naruse666/core/base/errors"
-	"github.com/naruse666/core/core"
-	"github.com/naruse666/core/htmlcore"
-)
-
-//go:embed example.html
-var content string
-
-func main() {
-	b := core.NewBody("HTML Example")
-	errors.Log(htmlcore.ReadHTMLString(htmlcore.NewContext(), b, content))
-	b.RunMainWindow()
-}
+// func main() {
+// 	b := core.NewBody("HTML Example")
+// 	errors.Log(htmlcore.ReadHTMLString(htmlcore.NewContext(), b, content))
+// 	b.RunMainWindow()
+// }

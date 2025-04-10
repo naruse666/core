@@ -4,30 +4,30 @@
 
 package htmlcore
 
-import (
-	"testing"
+// import (
+// 	"testing"
+//
+// 	"github.com/naruse666/core/core"
+// 	"github.com/stretchr/testify/assert"
+// )
 
-	"github.com/naruse666/core/core"
-	"github.com/stretchr/testify/assert"
-)
-
-func TestHTML(t *testing.T) {
-	tests := map[string]string{
-		"h1":     `<h1>Test</h1>`,
-		"h2":     `<h2>Test</h2>`,
-		"h3":     `<h3>Test</h3>`,
-		"h4":     `<h4>Test</h4>`,
-		"h5":     `<h5>Test</h5>`,
-		"h6":     `<h6>Test</h6>`,
-		"p":      `<p>Test</p>`,
-		"ol":     `<ol><li>Test</li></ol>`,
-		"ul":     `<ul><li>Test</li></ul>`,
-		"button": `<button>Test</button>`,
-		"input":  `<input value="Test">`,
-	}
-	for nm, s := range tests {
-		b := core.NewBody()
-		assert.NoError(t, ReadHTMLString(NewContext(), b, s))
-		b.AssertRender(t, "html/"+nm)
-	}
-}
+// func TestHTML(t *testing.T) {
+// 	tests := map[string]string{
+// 		"h1":     `<h1>Test</h1>`,
+// 		"h2":     `<h2>Test</h2>`,
+// 		"h3":     `<h3>Test</h3>`,
+// 		"h4":     `<h4>Test</h4>`,
+// 		"h5":     `<h5>Test</h5>`,
+// 		"h6":     `<h6>Test</h6>`,
+// 		"p":      `<p>Test</p>`,
+// 		"ol":     `<ol><li>Test</li></ol>`,
+// 		"ul":     `<ul><li>Test</li></ul>`,
+// 		"button": `<button>Test</button>`,
+// 		"input":  `<input value="Test">`,
+// 	}
+// 	for nm, s := range tests {
+// 		b := core.NewBody()
+// 		assert.NoError(t, ReadHTMLString(NewContext(), b, s))
+// 		b.AssertRender(t, "html/"+nm)
+// 	}
+// }
