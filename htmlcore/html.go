@@ -18,19 +18,19 @@ import (
 
 // ReadHTML reads HTML from the given [io.Reader] and adds corresponding
 // Cogent Core widgets to the given [core.Widget], using the given context.
-func ReadHTML(ctx *Context, parent core.Widget, r io.Reader, styles []*css.Stylesheet) error {
+func ReadHTML(ctx *Context, parent core.Widget, r io.Reader) error {
 	n, err := html.Parse(r)
 	if err != nil {
 		return fmt.Errorf("error parsing HTML: %w", err)
 	}
-	return ReadHTMLNode(ctx, parent, n, styles)
+	return readHTMLNode(ctx, parent, n)
 }
 
 // ReadHTMLString reads HTML from the given string and adds corresponding
 // Cogent Core widgets to the given [core.Widget], using the given context.
-func ReadHTMLString(ctx *Context, parent core.Widget, s string, styles []*css.Stylesheet) error {
+func ReadHTMLString(ctx *Context, parent core.Widget, s string) error {
 	b := bytes.NewBufferString(s)
-	return ReadHTML(ctx, parent, b, styles)
+	return ReadHTML(ctx, parent, b)
 }
 func readHTMLNode(ctx *Context, parent core.Widget, n *html.Node) error {
 	// nil parent means we are root, so we add user agent styles here
@@ -71,10 +71,9 @@ func ReadHTMLNode(ctx *Context, parent core.Widget, n *html.Node, styles []*css.
 	// nil parent means we are root, so we add user agent styles here
 	if n.Parent == nil {
 		ctx.Node = n
-		// ctx.addStyle(userAgentStyles)
+		ctx.addStyle(userAgentStyles)
 	}
 
-	ctx.AddStyle(styles)
 	switch n.Type {
 	case html.TextNode:
 		str := strings.TrimSpace(n.Data)
