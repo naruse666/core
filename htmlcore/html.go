@@ -85,8 +85,7 @@ func ReadHTMLNode(ctx *Context, parent core.Widget, n *html.Node, styles []*css.
 		ctx.BlockParent = parent
 		ctx.NewParent = nil
 
-		// HandleElement(ctx, styles)
-		handleElement(ctx)
+		HandleElement(ctx, styles)
 	default:
 		ctx.NewParent = parent
 	}

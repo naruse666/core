@@ -281,7 +281,7 @@ func HandleElement(ctx *Context, style []*css.Stylesheet) {
 		if errors.Log(err) != nil {
 			return
 		}
-		ctx.addStyleFromHtml(string(b))
+		ctx.addStyle(string(b))
 	case "style":
 		ctx.AddStyle(style)
 	case "body", "main", "div", "section", "nav", "footer", "header", "ol", "ul", "blockquote":

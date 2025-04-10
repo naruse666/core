@@ -162,33 +162,6 @@ func (c *Context) InlineParent() core.Widget {
 	return c.inlineParent
 }
 
-func (c *Context) addStyleFromHtml(b string) {
-	ss, err := parser.Parse(b)
-	if errors.Log(err) != nil {
-		return
-	}
-
-	root := rootNode(c.Node)
-
-	for _, rule := range ss.Rules {
-		var sel *selcss.Selector
-		if len(rule.Selectors) > 0 {
-			s, err := selcss.Parse(strings.Join(rule.Selectors, ","))
-			if errors.Log(err) != nil {
-				s = &selcss.Selector{}
-			}
-			sel = s
-		} else {
-			sel = &selcss.Selector{}
-		}
-
-		matches := sel.Select(root)
-		for _, match := range matches {
-			c.styles[match] = append(c.styles[match], rule)
-		}
-	}
-}
-
 // addStyle adds the given CSS style string to the page's compiled styles.
 func (c *Context) AddStyle(styles []*css.Stylesheet) {
 
