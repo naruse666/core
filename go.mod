@@ -1,4 +1,4 @@
-module cogentcore.org/core
+module github.com/naruse666/core
 
 go 1.23.4
 
