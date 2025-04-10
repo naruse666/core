@@ -72,7 +72,7 @@ func handleElement(ctx *Context) {
 		if errors.Log(err) != nil {
 			return
 		}
-		ctx.addStyleFromHtml(string(b))
+		ctx.addStyle(string(b))
 	case "style":
 		ctx.addStyle(ExtractText(ctx))
 	case "body", "main", "div", "section", "nav", "footer", "header", "ol", "ul", "blockquote":
